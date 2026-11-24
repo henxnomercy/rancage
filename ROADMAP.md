@@ -1,60 +1,77 @@
 # RANCAGE Roadmap
 
-## Published
+## Published baseline
 
-### v0.1.0 — Initial reference implementation
+### v0.1.0-alpha.1 — Clean-slate Stage 0 baseline
 
-- Lexer, parser, AST, static type checker, RANCAGE-IR compiler, bounded VM,
-  CLI, examples, and the original 13-test suite.
-- Published tag `v0.1.0` remains immutable.
+- Published in the new `henxnomercy/rancage` repository as a single root
+  commit; predecessor Git history was not imported.
+- Contains the completed and frozen Stage 0 language foundation.
+- Uses Python package version `0.1.0a1`; the CLI reports
+  `RANCAGE 0.1.0a1`.
+- Preserves the RANCAGE 0.1 language syntax and semantics baseline.
+- Includes the Python reference compiler, RANCAGE-IR compiler, bounded VM,
+  CLI, examples, documentation, and 134-test suite.
+- Includes the Windows standalone packaging pipeline; this is a packaged
+  Python application, not a native compiler or self-hosted toolchain.
 
-## Current development
+## Current development status
 
-### v0.2.0-alpha.1 — Windows standalone packaging preview
+Stage 0 is **COMPLETE / CLOSED / FROZEN**.
+Stage 1 is **NOT STARTED / NOT AUTHORIZED**.
+The RANCAGE Performance Roadmap (RPR) and its RPR-R0 foundation remain
+**PROPOSED / NOT AUTHORIZED**.
 
-- Establish RANCAGE as the language/project name and CAGE as the CLI name.
-- Use `.cage` for source and `.rcb` for compiled bytecode.
-- Keep the Python reference compiler and VM as the active implementation.
-- Maintain 16 unit/integration tests after the migration.
-- Bundle the Python runtime using PyInstaller for Windows x64 distribution.
-- Build and smoke-test one-file and one-folder Windows bundles.
-- Preserve clear third-party notices and the hybrid licensing boundary.
-- Keep language syntax and semantics unchanged from the RANCAGE 0.1 baseline.
+No later version number or implementation milestone is committed by this
+roadmap. Future work requires a separate proposal, acceptance criteria,
+independent review, QA, and explicit owner authorization.
 
-### v0.2.x — Distribution hardening
+## Future planning candidates — not approved or version-assigned
 
-- Verify reproducible Windows artifacts and checksums on clean machines.
-- Improve diagnostics and distribution documentation.
-- Review code-signing and Windows SmartScreen options when there is a trusted
-  identity/certificate.
-- Add Linux/macOS packaging only when matching runners and smoke tests are
-  available.
-- Finalize public licensing, contribution, and vulnerability-reporting
-  processes before opening broader community participation.
+### Language evolution
 
-### v0.3 — Language and compiler foundations
+Candidate areas for design and owner prioritization include:
 
-- Review type-system edges and error locations.
-- Formalize module/import design.
-- Define and test the standard-library design.
-- Stabilize RANCAGE-IR versioning and bytecode validation.
+- Structured error handling, potentially using `Result[T, E]` or an
+  equivalent design.
+- A practical module/import/export system and namespace rules.
+- `for` loops and range syntax.
+- Expanded string APIs and standard library design.
+- Enums and sum types.
+- Further generic type-system capabilities.
+- Improved diagnostics and source-location reporting.
+- Toolchain usability and packaging improvements.
 
-### v0.4+ — Platform research and backends
+Lists, maps, records, nullable types, and the Stage 0 VM/IR foundations are
+already implemented and must not be listed as wholly missing features.
 
-- Evaluate WebAssembly and native backend design.
-- Design Kotlin/Android integration without claiming Android support before
-  end-to-end tests.
-- Research Luau/Roblox source generation and platform constraints.
+### Performance research
 
-### Long-term — Self-hosting
+RPR-R0 is proposed as a read-only research and evidence-collection milestone.
+It is not authorized. Its purpose, acceptance gates, and outstanding Charter
+review issues are recorded in `PROJECT_STATUS.md` and the RPR documents.
+No optimization implementation, benchmark timing run, native backend, or
+compiler rewrite is authorized by the current status.
+
+### Distribution and platform research
+
+The Windows standalone packaging path exists. Further distribution hardening,
+other operating-system packages, WebAssembly, Android integration, and native
+backends require platform-specific feasibility work and independent build and
+conformance evidence before support is claimed.
+
+### Long-term — self-hosting
 
 - Mature the language enough to express compiler data structures and
   algorithms.
-- Implement a RANCAGE compiler in RANCAGE.
+- Design and implement a RANCAGE compiler in RANCAGE only after the required
+  language features and validation gates are approved.
 - Bootstrap using the existing Python reference compiler, then compare outputs
   and run conformance tests.
 
 ## Release rule
 
 A planned target is not a supported target. Each platform must build and pass
-its own smoke/conformance tests before it is advertised as supported.
+its own smoke/conformance tests before it is advertised as supported. Every
+new release version must be explicitly assigned and approved; version numbers
+must not be inferred from this roadmap.
