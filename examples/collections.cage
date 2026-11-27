@@ -1,0 +1,14 @@
+modul koleksi;
+
+pungsi main() -> int {
+    pasang daftar: list[int] = [10, 20, 30];
+    pasang peta: map[string, int] = {"a": 1, "b": 2};
+
+    pasang total: int = 0;
+    pikeun (pasang i: int = 0; i < len(daftar); i = i + 1) {
+        total = total + daftar[i];
+    }
+
+    pake peta["a"];
+    balik total;
+}

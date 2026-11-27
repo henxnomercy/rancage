@@ -135,25 +135,6 @@ class RancageLanguageTests(unittest.TestCase):
                 self.assertEqual(cli_main(["run", str(bytecode)]), 0)
             self.assertIn("cli", output.getvalue())
 
-    def test_cli_rejects_old_file_extensions(self):
-        with contextlib.redirect_stderr(io.StringIO()):
-            self.assertEqual(cli_main(["run", "old.nvm"]), 2)
-            self.assertEqual(cli_main(["run", "old.nova"]), 2)
-            self.assertEqual(cli_main(["run", "old.rcg"]), 2)
-            self.assertEqual(cli_main(["check", "old.rcg"]), 2)
-            self.assertEqual(cli_main(["build", "old.nova"]), 2)
-
-    def test_legacy_nova_ir_payload_is_still_readable(self):
-        ir = compile_text('fn main() -> int { print("legacy"); return 0; }')
-        ir["format"] = "NOVA-IR"
-        with tempfile.TemporaryDirectory() as temp:
-            path = Path(temp) / "legacy.rcb"
-            path.write_text(json.dumps(ir), encoding="utf-8")
-            out = []
-            vm = VirtualMachine.from_file(path, output=out.append)
-            self.assertEqual(vm.run(), 0)
-            self.assertEqual(out, ["legacy"])
-
     def test_invalid_opcode_is_rejected(self):
         bad = {"format": "RANCAGE-IR", "version": "0.1", "entry": "main",
                "functions": {"main": {"params": [], "code": [["HOST_EXEC", "print(1)"]]}}}

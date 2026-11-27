@@ -315,7 +315,7 @@ Proposal Typed IR minimal harus menjelaskan:
 - efek samping, error, dan operasi yang dapat gagal;
 - verifikasi well-formedness IR;
 - aturan lowering ke bytecode VM dan/atau native backend;
-- kompatibilitas dengan IR 0.1/0.2 dan NOVA-IR historis;
+- kompatibilitas dengan IR 0.1/0.2;
 - strategi pengujian kesetaraan hasil antara VM dan backend lain.
 
 Typed IR design adalah milestone desain. Ia tidak otomatis mengizinkan perubahan kode, format IR publik, atau penghapusan kompatibilitas.

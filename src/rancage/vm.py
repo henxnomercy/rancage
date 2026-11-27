@@ -158,7 +158,7 @@ class VirtualMachine:
         return cls(data, **kwargs)
 
     def _validate(self) -> None:
-        if not isinstance(self.program, dict) or self.program.get("format") not in {"RANCAGE-IR", "NOVA-IR"} or self.program.get("version") not in {"0.1", "0.2"}:
+        if not isinstance(self.program, dict) or self.program.get("format") != "RANCAGE-IR" or self.program.get("version") not in {"0.1", "0.2"}:
             raise RancageRuntimeError("Format atau versi RANCAGE-IR tidak didukung")
         functions = self.program.get("functions")
         if not isinstance(functions, dict) or self.program.get("entry") not in functions:

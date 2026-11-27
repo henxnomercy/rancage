@@ -1,0 +1,14 @@
+modul catatan;
+
+wangun Data {
+    nama: int;
+    nilai: int;
+}
+
+pungsi main() -> int {
+    pasang catatan1: Data = Data { nama: 1, nilai: 10 };
+    pasang catatan2: Data = Data { nama: 2, nilai: 20 };
+    pasang kapasitas: int = catatan1.nilai + catatan2.nilai;
+    citak(kapasitas);
+    balik 0;
+}

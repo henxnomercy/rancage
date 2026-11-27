@@ -3,8 +3,7 @@
 ## 0.2.0-alpha.1 — Windows standalone packaging preview
 
 - Established RANCAGE as the public language/project name, with `cage` / `cage.exe` as the short command and executable name.
-- Changed source files to `.cage` and compiled bytecode files to `.rcb`; `.nova`, `.nvm`, and the interim `.rcg` source extension are no longer accepted by source CLI commands.
-- Changed the emitted IR marker to `RANCAGE-IR`; the VM can still read legacy `NOVA-IR` payloads stored in `.rcb` files.
+- Changed source files to `.cage` and compiled bytecode files to `.rcb`; the legacy `.nova`, `.nvm`, and interim `.rcg` source extensions are no longer accepted by source CLI commands.
 - Added a pinned, build-time-only PyInstaller dependency.
 - Added Windows one-file and one-folder build scripts.
 - Added bundled executable smoke tests covering CLI, source execution, bytecode build, and bytecode execution.
