@@ -1,20 +1,26 @@
-# RANCAGE
+<p align="center">
+  <img src="assets/brand/rancage/png/color/RANCAGE-icon-256.png" alt="RANCAGE logo" width="128" height="128">
+</p>
 
-### A Language Built with Purpose.
+<h1 align="center">RANCAGE</h1>
 
-**Lightweight by Design. Safe by Discipline. Strong by Capability.**
+<h3 align="center">A Language Built with Purpose.</h3>
+
+<p align="center">
+  <b>Lightweight by Design. Safe by Discipline. Strong by Capability.</b>
+</p>
+
+<p align="center">
+  <img src="assets/brand/rancage/svg/principles/lightweight.svg" alt="Lightweight" width="48" height="48">
+  <img src="assets/brand/rancage/svg/principles/safety.svg" alt="Safety" width="48" height="48">
+  <img src="assets/brand/rancage/svg/principles/strong.svg" alt="Strong" width="48" height="48">
+</p>
 
 RANCAGE is an independent general-purpose programming language project built on three fundamental principles: **Lightweight**, **Safety**, and **Strong**. It is developed incrementally with attention to efficiency, security, expressive capability, semantic consistency, and implementation reliability.
 
 This repository contains the RANCAGE reference implementation: lexer, parser, AST, static type checker, RANCAGE-IR bytecode compiler, bounded virtual machine, CLI, examples, and tests. RANCAGE source files use the `.cage` extension and compile to `.rcb` bytecode executed by the reference VM.
 
 > **Current reality:** the implemented target is the Python reference VM. RANCAGE does not yet produce native machine code, Android APK/AAB, iOS apps, or other production targets as shipped features.
-
-<p align="center">
-  <img src="assets/brand/rancage/svg/principles/lightweight.svg" alt="Lightweight principle" width="48" height="48">
-  <img src="assets/brand/rancage/svg/principles/safety.svg" alt="Safety principle" width="48" height="48">
-  <img src="assets/brand/rancage/svg/principles/strong.svg" alt="Strong principle" width="48" height="48">
-</p>
 
 ## The Three Principles
 
