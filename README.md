@@ -68,6 +68,8 @@ The three principles must stay balanced: Lightweight must not sacrifice Safety, 
 
 RANCAGE is developed according to its own design, specification, decisions, and project milestones — not by copying another language's architecture. Priorities are correctness, security, stability, verifiable progress, reproducible tests and benchmarks, and mature features over premature feature expansion.
 
+The spirit of the name — *cakap* (eloquence), *cekatan* (agility), *kreatif*, and *kapabilitas* — maps naturally onto the engineering principles. Lightweight reflects agility without excess; Safety reflects careful, principled craftsmanship; Strong reflects capability and creative problem-solving. These are conceptual resonances, not symbolic claims: RANCAGE remains a technology project open to the global community.
+
 ## Current Implementation
 
 - **Version:** `RANCAGE 0.2.0a1` (development preview). `v0.1.0` is the frozen initial release.
