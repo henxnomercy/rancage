@@ -1,8 +1,14 @@
-# RANCAGE — Universal Programming Language
+<p align="center">
+  <img src="assets/brand/rancage/png/color/RANCAGE-icon-256.png" alt="RANCAGE logo" width="128" height="128">
+</p>
 
-**Development version:** `0.2.0-alpha.1`
-**Language baseline:** RANCAGE 0.1 syntax and semantics
-**Implementation:** Python reference compiler and VM
+<h1 align="center">RANCAGE — Universal Programming Language</h1>
+
+<p align="center">
+  <b>Development version:</b> <code>0.2.0-alpha.1</code><br>
+  <b>Language baseline:</b> RANCAGE 0.1 syntax and semantics<br>
+  <b>Implementation:</b> Python reference compiler and VM
+</p>
 
 RANCAGE is an experimental general-purpose programming language project. This
 repository contains its reference implementation: lexer, parser, AST, static
