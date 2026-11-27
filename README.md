@@ -16,11 +16,18 @@
   <img src="assets/brand/rancage/svg/principles/strong.svg" alt="Strong" width="48" height="48">
 </p>
 
-RANCAGE is an independent general-purpose programming language project built on three fundamental principles: **Lightweight**, **Safety**, and **Strong**. It is developed incrementally with attention to efficiency, security, expressive capability, semantic consistency, and implementation reliability.
+RANCAGE is an independent general-purpose programming language project rooted in Sundanese identity. The name comes from **"rancagé"** — *cakap* (speech/word), *cekatan* (agile/quick), *kreatif*, and *kapabilitas* — and is built on three fundamental principles: **Lightweight**, **Safety**, and **Strong**. It is developed incrementally with attention to efficiency, security, expressive capability, semantic consistency, and implementation reliability.
 
 This repository contains the RANCAGE reference implementation: lexer, parser, AST, static type checker, RANCAGE-IR bytecode compiler, bounded virtual machine, CLI, examples, and tests. RANCAGE source files use the `.cage` extension and compile to `.rcb` bytecode executed by the reference VM.
 
 > **Current reality:** the implemented target is the Python reference VM. RANCAGE does not yet produce native machine code, Android APK/AAB, iOS apps, or other production targets as shipped features.
+
+**Rancagé dina karya, pageuh dina prinsip.**
+*Cakap dalam berkarya, teguh dalam prinsip.*
+
+## Rooted in Sundanese Identity
+
+RANCAGE carries the heritage of the Sundanese language — **"rancagé"** meaning *cakap* (speech/word), *cekatan* (agile/quick), *kreatif*, and *kapabilitas* — into technology. The name reflects a spirit of eloquence, agility, creativity, and capability. RANCAGE is an independent project open to the global community; it is not limited to Sundanese speakers nor does it require Sundanese syntax.
 
 ## The Three Principles
 
