@@ -96,9 +96,10 @@ def execute_source(
     source: str,
     output: Callable[[str], None] = print,
     max_steps: int = DEFAULT_MAX_STEPS,
+    lang: str = "en",
 ) -> int:
     """Compile and run one complete program on a fresh virtual machine."""
-    program = parse_source(source)
+    program = parse_source(source, lang=lang)
     check_types(program)
     ir = compile_program(program)
     vm = VirtualMachine(ir, output=output, max_steps=max_steps)
@@ -117,10 +118,12 @@ class ReplSession:
         out: Callable[[str], None] = print,
         err: Callable[[str], None] | None = None,
         max_steps: int = DEFAULT_MAX_STEPS,
+        lang: str = "en",
     ):
         self._out = out
         self._err = out if err is None else err
         self.max_steps = max_steps
+        self._lang = lang
         self._lines: list[str] = []
         self._byte_count = 0
         self.active = True
@@ -213,7 +216,7 @@ class ReplSession:
             return
         source = self.buffer
         try:
-            status = execute_source(source, output=self._out, max_steps=self.max_steps)
+            status = execute_source(source, output=self._out, max_steps=self.max_steps, lang=self._lang)
         except RancageSyntaxError as exc:
             self._err(f"SyntaxError: line {exc.line}, column {exc.column}: {exc.message}")
         except RancageTypeError as exc:
@@ -238,6 +241,7 @@ def run_repl(
     stdout: TextIO | None = None,
     stderr: TextIO | None = None,
     max_steps: int = DEFAULT_MAX_STEPS,
+    lang: str = "en",
 ) -> int:
     """Run an interactive RANCAGE session against the given streams."""
     stdin = sys.stdin if stdin is None else stdin
@@ -253,7 +257,7 @@ def run_repl(
     for banner_line in BANNER:
         out(banner_line)
 
-    session = ReplSession(out=out, err=err, max_steps=max_steps)
+    session = ReplSession(out=out, err=err, max_steps=max_steps, lang=lang)
     consecutive_interrupts = 0
     while session.active:
         stdout.write(session.prompt)

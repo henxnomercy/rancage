@@ -1,0 +1,19 @@
+// EN example: library module imported by contoh_import_en.cage
+module utils;
+
+record Point {
+    x: int;
+    y: int;
+}
+
+fn add(a: int, b: int) -> int {
+    return a + b;
+}
+
+fn area(w: int, h: int) -> int {
+    return w * h;
+}
+
+fn make_point(x: int, y: int) -> Point {
+    return Point { x: x, y: y };
+}

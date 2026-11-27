@@ -138,28 +138,22 @@ class RancageLanguageTests(unittest.TestCase):
     def test_cli_rejects_old_file_extensions(self):
         with contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(cli_main(["run", "old.nvm"]), 2)
-            self.assertEqual(cli_main(["run", "old.rancage"]), 2)
+            self.assertEqual(cli_main(["run", "old.nova"]), 2)
             self.assertEqual(cli_main(["run", "old.rcg"]), 2)
             self.assertEqual(cli_main(["check", "old.rcg"]), 2)
-            self.assertEqual(cli_main(["build", "old.rancage"]), 2)
+            self.assertEqual(cli_main(["build", "old.nova"]), 2)
 
-    def test_legacy_format_payload_is_rejected(self):
+    def test_legacy_nova_ir_payload_is_still_readable(self):
         ir = compile_text('fn main() -> int { print("legacy"); return 0; }')
-        ir["format"] = "INVALID-IR"
-
+        ir["format"] = "NOVA-IR"
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "legacy.rcb"
             path.write_text(json.dumps(ir), encoding="utf-8")
             out = []
+            vm = VirtualMachine.from_file(path, output=out.append)
+            self.assertEqual(vm.run(), 0)
+            self.assertEqual(out, ["legacy"])
 
-            with self.assertRaisesRegex(
-                RancageRuntimeError,
-                "Format atau versi RANCAGE-IR tidak didukung",
-            ):
-                VirtualMachine.from_file(path, output=out.append)
-
-            self.assertEqual(out, [])
-            
     def test_invalid_opcode_is_rejected(self):
         bad = {"format": "RANCAGE-IR", "version": "0.1", "entry": "main",
                "functions": {"main": {"params": [], "code": [["HOST_EXEC", "print(1)"]]}}}
@@ -1834,6 +1828,937 @@ fn main() -> int {
                 code = cli_main(["run", str(src_path)])
             self.assertEqual(code, 12)
             self.assertIn("Point {'x': 5, 'y': 7}", run_cage_stdout.getvalue())
+
+
+class Stage1ForLoopTests(unittest.TestCase):
+    def _run(self, source: str):
+        out = []
+        ir = compile_text(source)
+        code = VirtualMachine(ir, output=out.append).run()
+        return code, out
+
+    def test_for_loop_basic_and_nested(self):
+        source = """
+fn main() -> int {
+    let total: int = 0;
+    for (let i: int = 0; i < 4; i = i + 1) {
+        for (let j: int = 0; j < 2; j = j + 1) {
+            total = total + i + j;
+        }
+    }
+    print(total);
+    return 0;
+}
+"""
+        code, out = self._run(source)
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["16"])
+
+    def test_for_loop_omitted_clauses(self):
+        source = """
+fn main() -> int {
+    let i: int = 0;
+    for (; i < 3; ) {
+        print(i);
+        i = i + 1;
+    }
+    return 0;
+}
+"""
+        code, out = self._run(source)
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["0", "1", "2"])
+
+    def test_for_loop_type_and_scope_errors(self):
+        with self.assertRaises(RancageTypeError):
+            check_types(parse_source("fn main() -> int { for (let i: int = 0; i; i = i + 1) { } return 0; }"))
+        with self.assertRaises(RancageTypeError):
+            check_types(parse_source("fn main() -> int { let i: int = 0; for (let i: int = 0; i < 1; i = i + 1) { } return 0; }"))
+        with self.assertRaises(RancageTypeError):
+            check_types(parse_source("fn f() -> int { for (let i: int = 0; i < 1; i = i + 1) { return 1; } } fn main() -> int { return 0; }"))
+
+
+class Stage15SundaPresetTests(unittest.TestCase):
+    def test_lexer_sunda_canonical_tokens_and_maximal_munch(self):
+        source = "modul pungsi pasang tetep balik lamun lain salila pikeun wangun bener salah kosong lamunan balikkeun beneran citak"
+        tokens = Lexer(source, lang="su").tokenize()
+        kinds = [(t.kind, t.value) for t in tokens[:-1]]
+        self.assertEqual(kinds, [
+            ("MODULE", "modul"),
+            ("FN", "pungsi"),
+            ("LET", "pasang"),
+            ("CONST", "tetep"),
+            ("RETURN", "balik"),
+            ("IF", "lamun"),
+            ("ELSE", "lain"),
+            ("WHILE", "salila"),
+            ("FOR", "pikeun"),
+            ("RECORD", "wangun"),
+            ("TRUE", "bener"),
+            ("FALSE", "salah"),
+            ("NULL", "kosong"),
+            ("IDENT", "lamunan"),
+            ("IDENT", "balikkeun"),
+            ("IDENT", "beneran"),
+            ("IDENT", "citak"),
+        ])
+
+    def test_lexer_rejects_unknown_lang(self):
+        with self.assertRaises(ValueError):
+            Lexer("fn main() -> int { return 0; }", lang="id")
+
+    def test_sunda_program_execution_and_keyword_rejection(self):
+        source = """
+modul uji;
+pungsi main() -> int {
+    pasang x: int? = kosong;
+    pasang beneran: bool = bener;
+    lamun (x == kosong && beneran) {
+        pasang citak_var: int = 7;
+        citak(citak_var);
+    } lain {
+        citak(0);
+    }
+    pasang i: int = 0;
+    salila (i < 2) {
+        citak(i);
+        i = i + 1;
+    }
+    balik 0;
+}
+"""
+        prog = parse_source(source, lang="su")
+        check_types(prog)
+        ir = compile_program(prog)
+        out: list[str] = []
+        code = VirtualMachine(ir, output=out.append).run()
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["7", "0", "1"])
+
+        with self.assertRaises(RancageSyntaxError):
+            parse_source("pungsi main() -> int { pasang wangun: int = 1; balik 0; }", lang="su")
+
+
+EXAMPLES_DIR = Path(__file__).resolve().parents[1] / "examples"
+
+
+class Stage1ModuleImportTests(unittest.TestCase):
+    """Tests for multi-file module/import resolution (Stage 1 completion)."""
+
+    def _run_source_with_files(
+        self,
+        main_source: str,
+        files: dict[str, str],
+        lang: str = "en",
+    ) -> tuple[int, list[str]]:
+        import tempfile
+        from rancage.resolver import resolve_imports
+        with tempfile.TemporaryDirectory() as tmp:
+            for name, content in files.items():
+                (Path(tmp) / name).write_text(content, encoding="utf-8")
+            main_path = Path(tmp) / "_main.cage"
+            main_path.write_text(main_source, encoding="utf-8")
+            prog = parse_source(main_source, lang=lang)
+            prog = resolve_imports(prog, main_path, lang=lang)
+            check_types(prog)
+            ir = compile_program(prog)
+            out: list[str] = []
+            code = VirtualMachine(ir, output=out.append).run()
+            return code, out
+
+    def test_import_basic_functions_en(self):
+        lib = "fn double(n: int) -> int { return n * 2; }"
+        main = 'import "lib.cage"; fn main() -> int { print(double(21)); return 0; }'
+        code, out = self._run_source_with_files(main, {"lib.cage": lib})
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["42"])
+
+    def test_import_basic_functions_su(self):
+        lib = "pungsi lipat(n: int) -> int { balik n * 2; }"
+        main = 'mawa "lib.cage"; pungsi main() -> int { citak(lipat(21)); balik 0; }'
+        code, out = self._run_source_with_files(main, {"lib.cage": lib}, lang="su")
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["42"])
+
+    def test_import_record_type_accessible(self):
+        lib = "record Pair { a: int; b: int; }"
+        main = 'import "lib.cage"; fn main() -> int { let p: Pair = Pair { a: 3, b: 7 }; print(p.a + p.b); return 0; }'
+        code, out = self._run_source_with_files(main, {"lib.cage": lib})
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["10"])
+
+    def test_import_skips_imported_main(self):
+        lib = 'fn side_fn(x: int) -> int { return x + 1; } fn main() -> int { print(99); return 0; }'
+        main = 'import "lib.cage"; fn main() -> int { print(side_fn(5)); return 0; }'
+        code, out = self._run_source_with_files(main, {"lib.cage": lib})
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["6"])
+
+    def test_transitive_import(self):
+        c = "fn triple(n: int) -> int { return n * 3; }"
+        b = 'import "c.cage"; fn double(n: int) -> int { return n * 2; }'
+        main = 'import "b.cage"; fn main() -> int { print(double(5)); print(triple(5)); return 0; }'
+        code, out = self._run_source_with_files(main, {"b.cage": b, "c.cage": c})
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["10", "15"])
+
+    def test_cyclic_import_rejected(self):
+        import tempfile
+        from rancage.resolver import resolve_imports, RancageImportError
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "a.cage").write_text('import "b.cage"; fn fa() -> int { return 1; }', encoding="utf-8")
+            (Path(tmp) / "b.cage").write_text('import "a.cage"; fn fb() -> int { return 2; }', encoding="utf-8")
+            main_path = Path(tmp) / "main.cage"
+            main_path.write_text('import "a.cage"; fn main() -> int { return 0; }', encoding="utf-8")
+            prog = parse_source(main_path.read_text(encoding="utf-8"))
+            with self.assertRaises(RancageImportError):
+                resolve_imports(prog, main_path)
+
+    def test_import_depth_limit(self):
+        import tempfile
+        from rancage.resolver import resolve_imports, RancageImportError, MAX_IMPORT_DEPTH
+        with tempfile.TemporaryDirectory() as tmp:
+            depth = MAX_IMPORT_DEPTH + 2
+            for i in range(depth, 0, -1):
+                content = (f'import "{i + 1}.cage"; fn f{i}() -> int {{ return {i}; }}'
+                           if i < depth else f'fn f{i}() -> int {{ return {i}; }}')
+                (Path(tmp) / f"{i}.cage").write_text(content, encoding="utf-8")
+            main_path = Path(tmp) / "main.cage"
+            main_path.write_text('import "1.cage"; fn main() -> int { return 0; }', encoding="utf-8")
+            prog = parse_source(main_path.read_text(encoding="utf-8"))
+            with self.assertRaises(RancageImportError):
+                resolve_imports(prog, main_path)
+
+    def test_import_file_not_found(self):
+        import tempfile
+        from rancage.resolver import resolve_imports, RancageImportError
+        with tempfile.TemporaryDirectory() as tmp:
+            main_path = Path(tmp) / "main.cage"
+            main_path.write_text('import "nonexistent.cage"; fn main() -> int { return 0; }', encoding="utf-8")
+            prog = parse_source(main_path.read_text(encoding="utf-8"))
+            with self.assertRaises(RancageImportError):
+                resolve_imports(prog, main_path)
+
+    def test_import_in_memory_disallowed(self):
+        from rancage.resolver import resolve_imports, RancageImportError
+        prog = parse_source('import "x.cage"; fn main() -> int { return 0; }')
+        with self.assertRaises(RancageImportError):
+            resolve_imports(prog, None)
+
+    def test_import_duplicate_fn_name_rejected(self):
+        import tempfile
+        from rancage.resolver import resolve_imports, RancageImportError
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "a.cage").write_text("fn helper() -> int { return 1; }", encoding="utf-8")
+            (Path(tmp) / "b.cage").write_text("fn helper() -> int { return 2; }", encoding="utf-8")
+            main_path = Path(tmp) / "main.cage"
+            main_path.write_text(
+                'import "a.cage"; import "b.cage"; fn main() -> int { return 0; }',
+                encoding="utf-8"
+            )
+            prog = parse_source(main_path.read_text(encoding="utf-8"))
+            with self.assertRaises(RancageImportError):
+                resolve_imports(prog, main_path)
+
+    def test_lexer_mawa_token_su(self):
+        tokens = Lexer("mawa", lang="su").tokenize()
+        self.assertEqual(tokens[0].kind, "IMPORT")
+        self.assertEqual(tokens[0].value, "mawa")
+
+    def test_lexer_import_is_ident_in_en(self):
+        tokens = Lexer("import", lang="en").tokenize()
+        self.assertEqual(tokens[0].kind, "IDENT")
+        self.assertEqual(tokens[0].value, "import")
+
+    def test_cli_en_import_example(self):
+        en_main = EXAMPLES_DIR / "contoh_import_en.cage"
+        self.assertTrue(en_main.exists())
+        run_out = io.StringIO()
+        with contextlib.redirect_stdout(run_out):
+            code = cli_main(["run", str(en_main)])
+        self.assertEqual(code, 0)
+        self.assertEqual(run_out.getvalue().splitlines(), ["42", "20", "10"])
+
+    def test_cli_su_import_example(self):
+        su_main = EXAMPLES_DIR / "contoh_import_su.cage"
+        self.assertTrue(su_main.exists())
+        run_out = io.StringIO()
+        with contextlib.redirect_stdout(run_out):
+            code = cli_main(["run", "--lang=su", str(su_main)])
+        self.assertEqual(code, 0)
+        self.assertEqual(run_out.getvalue().splitlines(), ["42", "20", "10"])
+
+    def test_parser_import_requires_string_literal(self):
+        with self.assertRaises(RancageSyntaxError):
+            parse_source("import utils; fn main() -> int { return 0; }")
+
+    def test_parser_import_requires_semicolon(self):
+        with self.assertRaises(RancageSyntaxError):
+            parse_source('import "x.cage" fn main() -> int { return 0; }')
+
+
+class Stage2WasmBackendTests(unittest.TestCase):
+    """Tests for Stage 2 WebAssembly (.wasm) binary backend."""
+
+    def test_wasm_header_and_arithmetic_control_flow(self):
+        from rancage.wasm_backend import compile_ir_to_wasm, WASM_MAGIC
+        src = """
+fn add(a: int, b: int) -> int {
+    return a + b;
+}
+
+fn main() -> int {
+    let sum: int = 0;
+    for (let i: int = 1; i <= 5; i = i + 1) {
+        if (i % 2 == 0) {
+            sum = add(sum, i);
+        } else {
+            sum = sum + 1;
+        }
+    }
+    print(sum);
+    return sum;
+}
+"""
+        ir = compile_text(src)
+        wasm_bytes = compile_ir_to_wasm(ir)
+        self.assertTrue(wasm_bytes.startswith(WASM_MAGIC))
+        self.assertLess(len(wasm_bytes), 1024)
+
+    def test_wasm_en_and_su_parity_and_node_execution(self):
+        import shutil
+        import subprocess
+        import tempfile
+        from rancage.wasm_backend import compile_ir_to_wasm
+
+        src_en = """
+fn fib(n: int) -> int {
+    if (n <= 1) {
+        return n;
+    }
+    return fib(n - 1) + fib(n - 2);
+}
+
+fn main() -> int {
+    let res: int = fib(7);
+    print(res);
+    let f: float = 2.5 + 1.5;
+    print(f);
+    let ok: bool = true && !false;
+    print(ok);
+    return 0;
+}
+"""
+        src_su = """
+pungsi fib(n: int) -> int {
+    lamun (n <= 1) {
+        balik n;
+    }
+    balik fib(n - 1) + fib(n - 2);
+}
+
+pungsi main() -> int {
+    pasang res: int = fib(7);
+    citak(res);
+    pasang f: float = 2.5 + 1.5;
+    citak(f);
+    pasang ok: bool = bener && !salah;
+    citak(ok);
+    balik 0;
+}
+"""
+        wasm_en = compile_ir_to_wasm(compile_text(src_en))
+        prog_su = parse_source(src_su, lang="su")
+        check_types(prog_su)
+        wasm_su = compile_ir_to_wasm(compile_program(prog_su))
+        self.assertEqual(wasm_en, wasm_su)
+
+        node = shutil.which("node")
+        if node:
+            with tempfile.TemporaryDirectory() as tmp:
+                wasm_path = Path(tmp) / "prog.wasm"
+                wasm_path.write_bytes(wasm_su)
+                js = (
+                    "const fs = require('fs');"
+                    f"const buf = fs.readFileSync({str(wasm_path)!r});"
+                    "if (!WebAssembly.validate(buf)) throw new Error('invalid wasm');"
+                    "const out = [];"
+                    "WebAssembly.instantiate(buf, { env: {"
+                    "  print_i64: v => out.push(v.toString()),"
+                    "  print_f64: v => out.push(String(v)),"
+                    "  print_bool: v => out.push(v ? 'true' : 'false')"
+                    "} }).then(({ instance }) => {"
+                    "  const rc = instance.exports.main();"
+                    "  console.log(JSON.stringify({ rc: Number(rc), out }));"
+                    "});"
+                )
+                proc = subprocess.run([node, "-e", js], capture_output=True, text=True, check=True)
+                data = json.loads(proc.stdout.strip())
+                self.assertEqual(data["rc"], 0)
+                self.assertEqual(data["out"], ["13", "4", "true"])
+
+    def test_wasm_rejects_unsupported_features(self):
+        from rancage.wasm_backend import compile_ir_to_wasm, RancageWasmError
+        ir_str = compile_text('fn main() -> int { print("hello"); return 0; }')
+        with self.assertRaises(RancageWasmError):
+            compile_ir_to_wasm(ir_str)
+
+        ir_list = compile_text("fn main() -> int { let xs: list[int] = [1, 2]; return len(xs); }")
+        with self.assertRaises(RancageWasmError):
+            compile_ir_to_wasm(ir_list)
+
+    def test_cli_build_target_wasm_en_and_su(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            src_path = Path(tmp) / "calc_su.cage"
+            wasm_path = Path(tmp) / "calc_su.wasm"
+            src_path.write_text(
+                "pungsi main() -> int { pasang x: int = 0; pikeun (pasang i: int = 0; i < 4; i = i + 1) { x = x + i; } citak(x); balik 0; }",
+                encoding="utf-8",
+            )
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                code = cli_main(["build", "--target", "wasm", "--lang=su", str(src_path), "-o", str(wasm_path)])
+            self.assertEqual(code, 0)
+            self.assertTrue(wasm_path.exists())
+            self.assertTrue(wasm_path.read_bytes().startswith(b"\x00asm\x01\x00\x00\x00"))
+
+
+class Stage1ErrorHandlingTests(unittest.TestCase):
+    """Tests for Stage 1 Error Handling (try / catch / throw & coba / tewak / balang)."""
+
+    def test_try_catch_basic_en(self):
+        src = """
+fn check_even(n: int) -> int {
+    if (n % 2 != 0) {
+        throw "must be even";
+    }
+    return n;
+}
+
+fn main() -> int {
+    let result: int = 0;
+    try {
+        result = check_even(7);
+    } catch (err: string) {
+        print(err);
+        result = 0 - 1;
+    }
+    print(result);
+    return 0;
+}
+"""
+        code, out = self._run(src)
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["must be even", "-1"])
+
+    def test_try_catch_parity_su(self):
+        src = """
+pungsi pariksa_genap(n: int) -> int {
+    lamun (n % 2 != 0) {
+        balang "kudu genap";
+    }
+    balik n;
+}
+
+pungsi main() -> int {
+    pasang hasil: int = 0;
+    coba {
+        hasil = pariksa_genap(7);
+    } tewak (e: string) {
+        citak(e);
+        hasil = 0 - 99;
+    }
+    citak(hasil);
+    balik 0;
+}
+"""
+        prog = parse_source(src, lang="su")
+        check_types(prog)
+        ir = compile_program(prog)
+        out = []
+        code = VirtualMachine(ir, output=out.append).run()
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["kudu genap", "-99"])
+
+    def test_cross_function_and_nested_propagation(self):
+        src = """
+fn level3() -> void {
+    throw "deep error";
+}
+
+fn level2() -> void {
+    level3();
+}
+
+fn level1() -> void {
+    try {
+        level2();
+    } catch (e: string) {
+        throw "wrapped: " + e;
+    }
+}
+
+fn main() -> int {
+    try {
+        level1();
+    } catch (final_err: string) {
+        print(final_err);
+    }
+    return 0;
+}
+"""
+        code, out = self._run(src)
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["wrapped: deep error"])
+
+    def test_uncaught_throw_raises_runtime_error(self):
+        src = """
+fn main() -> int {
+    throw "fatal problem";
+    return 0;
+}
+"""
+        with self.assertRaises(RancageRuntimeError) as ctx:
+            self._run(src)
+        self.assertIn("fatal problem", str(ctx.exception))
+        self.assertIn("Kesalahan tidak tertangkap", str(ctx.exception))
+
+    def test_try_catch_resource_limits_preserved(self):
+        src = """
+fn main() -> int {
+    try {
+        while (true) {
+            // Infinite loop inside try
+        }
+    } catch (e: string) {
+        print("should not catch resource limit");
+    }
+    return 0;
+}
+"""
+        with self.assertRaises(RancageRuntimeError) as ctx:
+            ir = compile_text(src)
+            VirtualMachine(ir, max_steps=100).run()
+        self.assertIn("Batas instruksi program terlampaui", str(ctx.exception))
+
+    def test_typesys_and_syntax_error_checks(self):
+        # Shadowing in catch
+        with self.assertRaises(RancageTypeError):
+            check_types(parse_source("fn main() -> int { let x: int = 1; try { } catch (x: string) { } return 0; }"))
+        # Invalid error type in catch
+        with self.assertRaises(RancageTypeError):
+            check_types(parse_source("fn main() -> int { try { } catch (e: invalid_type) { } return 0; }"))
+        # Lexer keyword rejection as identifier
+        with self.assertRaises(RancageSyntaxError):
+            parse_source("fn main() -> int { let try: int = 1; return 0; }")
+        with self.assertRaises(RancageSyntaxError):
+            parse_source("pungsi main() -> int { pasang coba: int = 1; balik 0; }", lang="su")
+
+    def test_wasm_rejects_try_catch(self):
+        from rancage.wasm_backend import compile_ir_to_wasm, RancageWasmError
+        ir = compile_text('fn main() -> int { try { throw "err"; } catch (e: string) { } return 0; }')
+        with self.assertRaises(RancageWasmError) as ctx:
+            compile_ir_to_wasm(ir)
+        self.assertIn("SETUP_TRY", str(ctx.exception))
+
+    def _run(self, source: str):
+        out = []
+        ir = compile_text(source)
+        code = VirtualMachine(ir, output=out.append).run()
+        return code, out
+
+
+class Stage1BreakContinueTests(unittest.TestCase):
+    """Tests for Stage 1 loop control: break / continue & eureun / tuluy."""
+
+    def test_break_while_and_for_en(self):
+        src = """
+fn main() -> int {
+    let count: int = 0;
+    while (count < 10) {
+        if (count == 3) {
+            break;
+        }
+        count = count + 1;
+    }
+    print(count);
+
+    let sum: int = 0;
+    for (let i: int = 0; i < 10; i = i + 1) {
+        if (i == 4) {
+            break;
+        }
+        sum = sum + i;
+    }
+    print(sum);
+    return 0;
+}
+"""
+        code, out = self._run(src)
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["3", "6"])
+
+    def test_continue_while_and_for_en(self):
+        src = """
+fn main() -> int {
+    let sum_even: int = 0;
+    for (let i: int = 0; i < 6; i = i + 1) {
+        if (i % 2 != 0) {
+            continue;
+        }
+        sum_even = sum_even + i;
+    }
+    print(sum_even);
+
+    let j: int = 0;
+    let total: int = 0;
+    while (j < 5) {
+        j = j + 1;
+        if (j == 3) {
+            continue;
+        }
+        total = total + j;
+    }
+    print(total);
+    return 0;
+}
+"""
+        code, out = self._run(src)
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["6", "12"])
+
+    def test_break_continue_parity_su(self):
+        src = """
+pungsi main() -> int {
+    pasang cacah: int = 0;
+    salila (cacah < 10) {
+        lamun (cacah == 3) {
+            eureun;
+        }
+        cacah = cacah + 1;
+    }
+    citak(cacah);
+
+    pasang jumlah: int = 0;
+    pikeun (pasang i: int = 0; i < 6; i = i + 1) {
+        lamun (i % 2 != 0) {
+            tuluy;
+        }
+        jumlah = jumlah + i;
+    }
+    citak(jumlah);
+    balik 0;
+}
+"""
+        prog = parse_source(src, lang="su")
+        check_types(prog)
+        ir = compile_program(prog)
+        out = []
+        code = VirtualMachine(ir, output=out.append).run()
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["3", "6"])
+
+    def test_break_continue_outside_loop_rejected(self):
+        with self.assertRaises(RancageTypeError):
+            check_types(parse_source("fn main() -> int { break; return 0; }"))
+        with self.assertRaises(RancageTypeError):
+            check_types(parse_source("fn main() -> int { continue; return 0; }"))
+
+    def test_break_continue_keywords_rejected_as_identifiers(self):
+        with self.assertRaises(RancageSyntaxError):
+            parse_source("fn main() -> int { let break: int = 1; return 0; }")
+        with self.assertRaises(RancageSyntaxError):
+            parse_source("fn main() -> int { let continue: int = 1; return 0; }")
+        with self.assertRaises(RancageSyntaxError):
+            parse_source("pungsi main() -> int { pasang eureun: int = 1; balik 0; }", lang="su")
+        with self.assertRaises(RancageSyntaxError):
+            parse_source("pungsi main() -> int { pasang tuluy: int = 1; balik 0; }", lang="su")
+
+    def test_wasm_rejects_break_continue(self):
+        from rancage.wasm_backend import compile_ir_to_wasm, RancageWasmError
+        ir = compile_text("fn main() -> int { while (true) { break; } return 0; }")
+        with self.assertRaises(RancageWasmError) as ctx:
+            compile_ir_to_wasm(ir)
+        self.assertIn("BREAK", str(ctx.exception))
+
+    def _run(self, source: str):
+        out = []
+        ir = compile_text(source)
+        code = VirtualMachine(ir, output=out.append).run()
+        return code, out
+
+
+class Stage1TryControlFlowLeakTests(unittest.TestCase):
+    """Regression tests: break/continue/return inside try must not leak handler stack."""
+
+    def _run(self, source: str):
+        out = []
+        ir = compile_text(source)
+        code = VirtualMachine(ir, output=out.append).run()
+        return code, out
+
+    def test_break_inside_try_does_not_leak_handler(self):
+        src = """
+fn main() -> int {
+    let x: int = 0;
+    while (x < 5) {
+        try {
+            if (x == 2) { break; }
+            x = x + 1;
+        } catch (e: string) {
+            print("wrong");
+        }
+    }
+    print(x);
+    try {
+        throw "after";
+    } catch (e: string) {
+        print(e);
+    }
+    return 0;
+}
+"""
+        code, out = self._run(src)
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["2", "after"])
+
+    def test_continue_inside_try_does_not_leak_handler(self):
+        src = """
+fn main() -> int {
+    let i: int = 0;
+    let sum: int = 0;
+    while (i < 5) {
+        try {
+            i = i + 1;
+            if (i == 3) { continue; }
+            sum = sum + i;
+        } catch (e: string) {
+            print("wrong");
+        }
+    }
+    print(sum);
+    try {
+        throw "after";
+    } catch (e: string) {
+        print(e);
+    }
+    return 0;
+}
+"""
+        code, out = self._run(src)
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["12", "after"])
+
+    def test_return_inside_try_does_not_leak_handler(self):
+        src = """
+fn inner() -> int {
+    try {
+        return 42;
+    } catch (e: string) {
+        return 0 - 1;
+    }
+    return 0;
+}
+fn main() -> int {
+    print(inner());
+    try {
+        throw "after";
+    } catch (e: string) {
+        print(e);
+    }
+    return 0;
+}
+"""
+        code, out = self._run(src)
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["42", "after"])
+
+    def test_break_inside_try_su(self):
+        src = """
+pungsi main() -> int {
+    pasang x: int = 0;
+    salila (x < 5) {
+        coba {
+            lamun (x == 2) { eureun; }
+            x = x + 1;
+        } tewak (e: string) {
+            citak("salah");
+        }
+    }
+    citak(x);
+    coba {
+        balang "sesudah";
+    } tewak (e: string) {
+        citak(e);
+    }
+    balik 0;
+}
+"""
+        prog = parse_source(src, lang="su")
+        check_types(prog)
+        ir = compile_program(prog)
+        out = []
+        code = VirtualMachine(ir, output=out.append).run()
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["2", "sesudah"])
+
+    def test_continue_inside_try_su(self):
+        src = """
+pungsi main() -> int {
+    pasang i: int = 0;
+    pasang jumlah: int = 0;
+    salila (i < 5) {
+        coba {
+            i = i + 1;
+            lamun (i == 3) { tuluy; }
+            jumlah = jumlah + i;
+        } tewak (e: string) {
+            citak("salah");
+        }
+    }
+    citak(jumlah);
+    coba {
+        balang "sesudah";
+    } tewak (e: string) {
+        citak(e);
+    }
+    balik 0;
+}
+"""
+        prog = parse_source(src, lang="su")
+        check_types(prog)
+        ir = compile_program(prog)
+        out = []
+        code = VirtualMachine(ir, output=out.append).run()
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["12", "sesudah"])
+
+    def test_nested_try_break_unwinds_all_handlers(self):
+        src = """
+fn main() -> int {
+    let x: int = 0;
+    while (x < 10) {
+        try {
+            try {
+                if (x == 1) { break; }
+                x = x + 1;
+            } catch (e: string) {
+                print("inner");
+            }
+        } catch (e: string) {
+            print("outer");
+        }
+    }
+    print(x);
+    try { throw "ok"; } catch (e: string) { print(e); }
+    return 0;
+}
+"""
+        code, out = self._run(src)
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["1", "ok"])
+
+
+class Stage2WasmRejectionDeterministicTests(unittest.TestCase):
+    """Wasm backend must reject unsupported ops deterministically with clean CLI error."""
+
+    def _assert_cli_rejects(self, source: str, lang: str, expected_substr: str):
+        with tempfile.TemporaryDirectory() as tmp:
+            src_path = Path(tmp) / f"bad_{lang}.cage"
+            wasm_path = Path(tmp) / "out.wasm"
+            src_path.write_text(source, encoding="utf-8")
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                code = cli_main(["build", "--target", "wasm", f"--lang={lang}", str(src_path), "-o", str(wasm_path)])
+            self.assertEqual(code, 1)
+            err = stderr.getvalue()
+            self.assertIn("Error:", err)
+            self.assertIn(expected_substr, err)
+            self.assertNotIn("Traceback", err)
+            self.assertFalse(wasm_path.exists())
+
+    def test_wasm_rejects_try_catch_en(self):
+        self._assert_cli_rejects(
+            'fn main() -> int { try { throw "x"; } catch (e: string) { } return 0; }',
+            "en", "SETUP_TRY"
+        )
+
+    def test_wasm_rejects_try_catch_su(self):
+        self._assert_cli_rejects(
+            'pungsi main() -> int { coba { balang "x"; } tewak (e: string) { } balik 0; }',
+            "su", "SETUP_TRY"
+        )
+
+    def test_wasm_rejects_break_en(self):
+        self._assert_cli_rejects(
+            "fn main() -> int { while (true) { break; } return 0; }",
+            "en", "BREAK"
+        )
+
+    def test_wasm_rejects_break_su(self):
+        self._assert_cli_rejects(
+            "pungsi main() -> int { salila (bener) { eureun; } balik 0; }",
+            "su", "BREAK"
+        )
+
+    def test_wasm_rejects_continue_en(self):
+        self._assert_cli_rejects(
+            "fn main() -> int { let i: int = 0; while (i < 1) { i = i + 1; continue; } return 0; }",
+            "en", "CONTINUE"
+        )
+
+    def test_wasm_rejects_continue_su(self):
+        self._assert_cli_rejects(
+            "pungsi main() -> int { pasang i: int = 0; salila (i < 1) { i = i + 1; tuluy; } balik 0; }",
+            "su", "CONTINUE"
+        )
+
+    def test_wasm_rejects_throw_en(self):
+        self._assert_cli_rejects(
+            "fn main() -> int { throw 42; return 0; }",
+            "en", "THROW"
+        )
+
+    def test_wasm_rejects_throw_su(self):
+        self._assert_cli_rejects(
+            "pungsi main() -> int { balang 42; balik 0; }",
+            "su", "THROW"
+        )
+
+
+class Stage1SundaExampleTests(unittest.TestCase):
+    """Regression tests for the canonical Sundanese example programs."""
+
+    def _run_example(self, name: str, max_steps: int = 1_000_000):
+        from rancage.cli import compile_source
+        path = EXAMPLES_DIR / name
+        self.assertTrue(path.exists())
+        out = []
+        with contextlib.redirect_stdout(io.StringIO()):
+            ir = compile_source(path, lang="su")
+        code = VirtualMachine(ir, output=out.append, max_steps=max_steps).run()
+        return code, out
+
+    def test_test_wasm_su_example(self):
+        code, out = self._run_example("test_wasm_su.cage")
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["120"])
+
+    def test_test_kontrol_su_example(self):
+        code, out = self._run_example("test_kontrol_su.cage")
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ["10", "404", "40", "50", "100"])
+
+    def test_test_batas_vm_example_respects_step_budget(self):
+        from rancage.cli import compile_source
+        path = EXAMPLES_DIR / "test_batas_vm.cage"
+        self.assertTrue(path.exists())
+        with contextlib.redirect_stdout(io.StringIO()):
+            ir = compile_source(path, lang="su")
+        with self.assertRaises(RancageRuntimeError) as ctx:
+            VirtualMachine(ir, output=lambda _: None, max_steps=500).run()
+        self.assertIn("Batas instruksi program terlampaui", str(ctx.exception))
 
 
 if __name__ == "__main__":

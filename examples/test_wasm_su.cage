@@ -1,0 +1,12 @@
+pungsi faktorial(n: int) -> int {
+    pasang hasil: int = 1;
+    pikeun (pasang i: int = 2; i <= n; i = i + 1) {
+        hasil = hasil * i;
+    }
+    balik hasil;
+}
+
+pungsi main() -> int {
+    citak(faktorial(5)); // ekspektasi output: 120
+    balik 0;
+}

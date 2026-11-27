@@ -1,0 +1,17 @@
+// Contoh import multi-file: preset Sunda
+// Jalankan: cage run --lang=su examples\contoh_import_su.cage
+
+mawa "pustaka_su.cage";
+
+pungsi main() -> int {
+    pasang hasil: int = tambah(10, 32);
+    citak(hasil);
+
+    pasang luas: int = segi_empat(4, 5);
+    citak(luas);
+
+    pasang t: Titik = buat_titik(3, 7);
+    citak(t.x + t.y);
+
+    balik 0;
+}

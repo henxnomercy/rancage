@@ -20,12 +20,15 @@ class Compiler:
         functions = {}
         for fn in self.program.functions:
             self.code = []
+            self.loop_stack: list[dict[str, list[int] | int]] = []
+            self.try_depth = 0
             for stmt in fn.body: self._stmt(stmt)
             # A final void return is harmless for void functions and unreachable after a required return.
             self.emit("PUSH", None)
             self.emit("RETURN")
             functions[fn.name] = {
                 "params": [p.name for p in fn.params],
+                "param_types": [p.type_name for p in fn.params],
                 "return_type": fn.return_type,
                 "code": self.code,
             }
@@ -93,9 +96,68 @@ class Compiler:
             start = len(self.code)
             self._expr(stmt.condition)
             end_jump = self.emit("JUMP_IF_FALSE", -1)
+            loop_ctx: dict[str, list[int] | int] = {"breaks": [], "continues": [], "try_depth": self.try_depth}
+            self.loop_stack.append(loop_ctx)
             for child in stmt.body: self._stmt(child)
+            self.loop_stack.pop()
             self.emit("JUMP", start)
             self.patch(end_jump, len(self.code))
+            for b_idx in loop_ctx["breaks"]:  # type: ignore[union-attr]
+                self.patch(b_idx, len(self.code))
+            for c_idx in loop_ctx["continues"]:  # type: ignore[union-attr]
+                self.patch(c_idx, start)
+        elif isinstance(stmt, For):
+            if stmt.init is not None:
+                self._stmt(stmt.init)
+            start = len(self.code)
+            end_jump = None
+            if stmt.condition is not None:
+                self._expr(stmt.condition)
+                end_jump = self.emit("JUMP_IF_FALSE", -1)
+            loop_ctx: dict[str, list[int] | int] = {"breaks": [], "continues": [], "try_depth": self.try_depth}
+            self.loop_stack.append(loop_ctx)
+            for child in stmt.body:
+                self._stmt(child)
+            self.loop_stack.pop()
+            step_pc = len(self.code)
+            if stmt.step is not None:
+                self._stmt(stmt.step)
+            self.emit("JUMP", start)
+            if end_jump is not None:
+                self.patch(end_jump, len(self.code))
+            for b_idx in loop_ctx["breaks"]:  # type: ignore[union-attr]
+                self.patch(b_idx, len(self.code))
+            for c_idx in loop_ctx["continues"]:  # type: ignore[union-attr]
+                self.patch(c_idx, step_pc)
+        elif isinstance(stmt, Break):
+            loop_ctx = self.loop_stack[-1]
+            for _ in range(self.try_depth - int(loop_ctx["try_depth"])):
+                self.emit("POP_TRY")
+            b_idx = self.emit("BREAK", -1)
+            loop_ctx["breaks"].append(b_idx)  # type: ignore[union-attr]
+        elif isinstance(stmt, Continue):
+            loop_ctx = self.loop_stack[-1]
+            for _ in range(self.try_depth - int(loop_ctx["try_depth"])):
+                self.emit("POP_TRY")
+            c_idx = self.emit("CONTINUE", -1)
+            loop_ctx["continues"].append(c_idx)  # type: ignore[union-attr]
+        elif isinstance(stmt, TryCatch):
+            setup_idx = self.emit("SETUP_TRY", -1)
+            self.try_depth += 1
+            for child in stmt.try_body:
+                self._stmt(child)
+            self.try_depth -= 1
+            self.emit("POP_TRY")
+            jump_end = self.emit("JUMP", -1)
+            handler_pc = len(self.code)
+            self.patch(setup_idx, handler_pc)
+            self.emit("STORE", stmt.err_name)
+            for child in stmt.catch_body:
+                self._stmt(child)
+            self.patch(jump_end, len(self.code))
+        elif isinstance(stmt, Throw):
+            self._expr(stmt.value)
+            self.emit("THROW")
         else:
             raise ValueError(f"Pernyataan compiler tidak dikenal: {type(stmt).__name__}")
 

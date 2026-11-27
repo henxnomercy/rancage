@@ -1,0 +1,22 @@
+// Pustaka Sunda: fungsi utilitas yang diimport
+// Dijalankan dengan: cage run --lang=su
+// (File ini diimport dari contoh_su_main.cage)
+
+modul pustaka_su;
+
+wangun Titik {
+    x: int;
+    y: int;
+}
+
+pungsi tambah(a: int, b: int) -> int {
+    balik a + b;
+}
+
+pungsi segi_empat(lebar: int, tinggi: int) -> int {
+    balik lebar * tinggi;
+}
+
+pungsi buat_titik(x: int, y: int) -> Titik {
+    balik Titik { x: x, y: y };
+}

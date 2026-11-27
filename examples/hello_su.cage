@@ -1,0 +1,29 @@
+// Jalankeun ku: cage run --lang=su examples/hello_su.cage
+modul halo_sunda;
+
+wangun Titik {
+    x: int;
+    y: int;
+}
+
+pungsi main() -> int {
+    tetep awal: Titik = Titik { x: 1, y: 2 };
+    pasang lamunan: int = awal.x + awal.y;
+    citak(lamunan);
+
+    pasang jumlah: int = 0;
+    pikeun (pasang i: int = 0; i < 5; i = i + 1) {
+        lamun (i % 2 == 0) {
+            citak(i);
+        } lain {
+            jumlah = jumlah + i;
+        }
+    }
+
+    pasang beneran: bool = bener;
+    lamun (beneran) {
+        citak(jumlah);
+    }
+
+    balik 0;
+}

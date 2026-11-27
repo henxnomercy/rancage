@@ -1,0 +1,30 @@
+pungsi itung_aman(n: int) -> int {
+    lamun (n == 3) {
+        balang 404;
+    }
+    balik n * 10;
+}
+
+pungsi main() -> int {
+    pasang total: int = 0;
+
+    pikeun (pasang i: int = 1; i <= 6; i = i + 1) {
+        lamun (i == 2) {
+            tuluy; // lewati angka 2
+        }
+        lamun (i == 6) {
+            eureun; // berhenti sebelum 6
+        }
+
+        coba {
+            pasang hasil: int = itung_aman(i);
+            total = total + hasil;
+            citak(hasil);
+        } tewak (kode: int) {
+            citak(kode); // harus menangkap 404 saat i == 3
+        }
+    }
+
+    citak(total); // ekspektasi: 10 + 40 + 50 = 100
+    balik 0;
+}

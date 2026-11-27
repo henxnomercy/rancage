@@ -110,8 +110,12 @@ class TypeChecker:
         last = body[-1]
         if isinstance(last, Return):
             return True
+        if isinstance(last, Throw):
+            return True
         if isinstance(last, If) and last.else_body is not None:
             return self._always_returns(last.then_body) and self._always_returns(last.else_body)
+        if isinstance(last, TryCatch):
+            return self._always_returns(last.try_body) and self._always_returns(last.catch_body)
         return False
 
     def _get_root_name(self, expr: Expr) -> str | None:
@@ -123,7 +127,7 @@ class TypeChecker:
             return self._get_root_name(expr.target)
         return None
 
-    def _check_block(self, body: list[Stmt], env: dict[str, str], consts: set[str], declared_names: set[str], return_type: str) -> None:
+    def _check_block(self, body: list[Stmt], env: dict[str, str], consts: set[str], declared_names: set[str], return_type: str, loop_depth: int = 0) -> None:
         for stmt in body:
             if isinstance(stmt, Let):
                 if stmt.name in declared_names:
@@ -201,14 +205,45 @@ class TypeChecker:
                 cond = self._expr(stmt.condition, env, None, consts)
                 if cond != "bool":
                     raise RancageTypeError("Kondisi if harus bertipe bool", stmt.span)
-                self._check_block(stmt.then_body, dict(env), set(consts), declared_names, return_type)
+                self._check_block(stmt.then_body, dict(env), set(consts), declared_names, return_type, loop_depth)
                 if stmt.else_body is not None:
-                    self._check_block(stmt.else_body, dict(env), set(consts), declared_names, return_type)
+                    self._check_block(stmt.else_body, dict(env), set(consts), declared_names, return_type, loop_depth)
             elif isinstance(stmt, While):
                 cond = self._expr(stmt.condition, env, None, consts)
                 if cond != "bool":
                     raise RancageTypeError("Kondisi while harus bertipe bool", stmt.span)
-                self._check_block(stmt.body, dict(env), set(consts), declared_names, return_type)
+                self._check_block(stmt.body, dict(env), set(consts), declared_names, return_type, loop_depth + 1)
+            elif isinstance(stmt, For):
+                loop_env = dict(env)
+                loop_consts = set(consts)
+                if stmt.init is not None:
+                    self._check_block([stmt.init], loop_env, loop_consts, declared_names, return_type, loop_depth)
+                if stmt.condition is not None:
+                    cond = self._expr(stmt.condition, loop_env, None, loop_consts)
+                    if cond != "bool":
+                        raise RancageTypeError("Kondisi for harus bertipe bool", stmt.span)
+                self._check_block(stmt.body, dict(loop_env), set(loop_consts), declared_names, return_type, loop_depth + 1)
+                if stmt.step is not None:
+                    self._check_block([stmt.step], loop_env, loop_consts, declared_names, return_type, loop_depth)
+            elif isinstance(stmt, TryCatch):
+                self._check_block(stmt.try_body, dict(env), set(consts), declared_names, return_type, loop_depth)
+                catch_env = dict(env)
+                catch_consts = set(consts)
+                if stmt.err_name in declared_names:
+                    raise RancageTypeError(f"Variabel '{stmt.err_name}' sudah dideklarasikan dalam fungsi ini", stmt.span)
+                if not self.is_valid_type(stmt.err_type):
+                    raise RancageTypeError(f"Tipe error tidak valid: {stmt.err_type}", stmt.span)
+                catch_env[stmt.err_name] = stmt.err_type
+                catch_declared = set(declared_names) | {stmt.err_name}
+                self._check_block(stmt.catch_body, catch_env, catch_consts, catch_declared, return_type, loop_depth)
+            elif isinstance(stmt, Throw):
+                self._expr(stmt.value, env, None, consts)
+            elif isinstance(stmt, Break):
+                if loop_depth <= 0:
+                    raise RancageTypeError("'break' hanya boleh digunakan di dalam loop", stmt.span)
+            elif isinstance(stmt, Continue):
+                if loop_depth <= 0:
+                    raise RancageTypeError("'continue' hanya boleh digunakan di dalam loop", stmt.span)
 
     def _expr(self, expr: Expr, env: dict[str, str], expected: str | None = None, consts: set[str] | None = None) -> str:
         t = self._eval_expr(expr, env, expected, consts)

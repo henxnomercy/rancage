@@ -2,7 +2,7 @@
 TARGETS = [
     ("rancage-vm", "Reference bytecode VM", "implemented-experimental", "Runs RANCAGE-IR .rcb in the reference runtime"),
     ("native", "Native machine code", "planned", "x86-64, ARM64, RISC-V; platform-specific toolchains required"),
-    ("wasm", "WebAssembly", "planned", "Browser and WASI-style host environments"),
+    ("wasm", "WebAssembly", "implemented-experimental", "Emits .wasm binary for numeric/bool/control-flow subset"),
     ("dotnet", ".NET", "planned", "Managed .NET integration"),
     ("jvm", "JVM", "planned", "Managed Java ecosystem integration"),
     ("javascript", "JavaScript / TypeScript", "planned", "Web and JavaScript runtimes"),

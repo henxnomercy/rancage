@@ -1,0 +1,10 @@
+pungsi main() -> int {
+    coba {
+        pikeun (pasang i: int = 0; 1 == 1; i = i + 1) {
+            // loop tanpa batas
+        }
+    } tewak (err: int) {
+        citak(999); // baris ini TIDAK BOLEH tereksekusi
+    }
+    balik 0;
+}

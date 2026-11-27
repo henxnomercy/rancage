@@ -10,6 +10,12 @@ class RancageRuntimeError(Exception):
     pass
 
 
+class _RancageUserThrow(Exception):
+    def __init__(self, value: Any):
+        super().__init__(str(value))
+        self.value = value
+
+
 MAX_STEPS = 1_000_000
 MAX_DEPTH = 128
 MAX_COLLECTION_SIZE = 100_000
@@ -101,11 +107,20 @@ STAGE0_OPS = {
     "STRING_GET",
 }
 
+STAGE1_OPS = {
+    "SETUP_TRY",
+    "POP_TRY",
+    "THROW",
+    "BREAK",
+    "CONTINUE",
+}
+
 OPS = {
     "PUSH", "LOAD", "STORE", "POP", "ADD", "SUB", "MUL", "DIV", "MOD",
     "EQ", "NE", "LT", "LE", "GT", "GE", "AND", "OR", "NOT", "NEG",
     "JUMP", "JUMP_IF_FALSE", "CALL", "RETURN",
     *STAGE0_OPS,
+    *STAGE1_OPS,
 }
 
 
@@ -143,7 +158,7 @@ class VirtualMachine:
         return cls(data, **kwargs)
 
     def _validate(self) -> None:
-        if not isinstance(self.program, dict) or self.program.get("format") not in {"RANCAGE-IR"} or self.program.get("version") not in {"0.1", "0.2"}:
+        if not isinstance(self.program, dict) or self.program.get("format") not in {"RANCAGE-IR", "NOVA-IR"} or self.program.get("version") not in {"0.1", "0.2"}:
             raise RancageRuntimeError("Format atau versi RANCAGE-IR tidak didukung")
         functions = self.program.get("functions")
         if not isinstance(functions, dict) or self.program.get("entry") not in functions:
@@ -185,10 +200,16 @@ class VirtualMachine:
                 if not isinstance(instruction, list) or not instruction or instruction[0] not in OPS:
                     raise RancageRuntimeError(f"Instruksi tidak dikenal dalam fungsi '{name}'")
                 op = instruction[0]
-                no_arg = OPS - {"PUSH", "LOAD", "STORE", "JUMP", "JUMP_IF_FALSE", "CALL", "MAKE_LIST", "MAKE_MAP", "MAKE_RECORD", "GET_FIELD", "SET_FIELD"}
+                no_arg = OPS - {"PUSH", "LOAD", "STORE", "JUMP", "JUMP_IF_FALSE", "SETUP_TRY", "BREAK", "CONTINUE", "CALL", "MAKE_LIST", "MAKE_MAP", "MAKE_RECORD", "GET_FIELD", "SET_FIELD"}
                 if op in no_arg and len(instruction) != 1:
                     raise RancageRuntimeError(f"Arity instruksi {op} tidak valid")
-                if op == "PUSH":
+                if op == "SETUP_TRY":
+                    if len(instruction) != 2 or not isinstance(instruction[1], int) or instruction[1] < 0:
+                        raise RancageRuntimeError("Operand SETUP_TRY tidak valid")
+                elif op in ("BREAK", "CONTINUE"):
+                    if len(instruction) != 2 or not isinstance(instruction[1], int) or instruction[1] < 0:
+                        raise RancageRuntimeError(f"Operand {op} tidak valid")
+                elif op == "PUSH":
                     if len(instruction) != 2 or not (instruction[1] is None or type(instruction[1]) in (bool, int, float, str)):
                         raise RancageRuntimeError("Konstanta PUSH tidak valid")
                     cval = instruction[1]
@@ -245,7 +266,11 @@ class VirtualMachine:
 
     def run(self):
         entry = self.program["entry"]
-        result = self._call(entry, [], 0)
+        try:
+            result = self._call(entry, [], 0)
+        except _RancageUserThrow as exc:
+            msg = self._format(exc.value) if not isinstance(exc.value, str) else exc.value
+            raise RancageRuntimeError(f"Kesalahan tidak tertangkap (uncaught throw): {msg}")
         if result is None:
             return 0
         if isinstance(result, bool) or not isinstance(result, int):
@@ -356,6 +381,7 @@ class VirtualMachine:
         locals_ = dict(zip(params, args))
         stack = []
         ip = 0
+        handlers: list[tuple[int, int]] = []
         while ip < len(code):
             self.steps += 1
             if self.steps > self.max_steps:
@@ -363,7 +389,20 @@ class VirtualMachine:
             ins = code[ip]
             op = ins[0]
             try:
-                if op == "PUSH":
+                if op == "SETUP_TRY":
+                    self._check_jump(ins[1], len(code))
+                    handlers.append((ins[1], len(stack)))
+                elif op == "POP_TRY":
+                    if handlers:
+                        handlers.pop()
+                elif op == "THROW":
+                    val = self._pop(stack)
+                    raise _RancageUserThrow(val)
+                elif op in ("BREAK", "CONTINUE"):
+                    self._check_jump(ins[1], len(code))
+                    ip = ins[1]
+                    continue
+                elif op == "PUSH":
                     stack.append(ins[1])
                 elif op == "LOAD":
                     if ins[1] not in locals_:
@@ -540,6 +579,14 @@ class VirtualMachine:
                     right, left = self._pop(stack), self._pop(stack)
                     stack.append(self._binary(op, left, right))
             except RancageRuntimeError:
+                raise
+            except _RancageUserThrow as exc:
+                if handlers:
+                    target_pc, saved_stack_len = handlers.pop()
+                    del stack[saved_stack_len:]
+                    stack.append(exc.value)
+                    ip = target_pc
+                    continue
                 raise
             except IndexError as exc:
                 raise RancageRuntimeError(f"Stack underflow pada instruksi {ip} fungsi '{name}'") from exc

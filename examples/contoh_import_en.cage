@@ -1,0 +1,17 @@
+// EN example: imports utils.cage
+// Run: cage run examples\contoh_import_en.cage
+
+import "utils.cage";
+
+fn main() -> int {
+    let r: int = add(10, 32);
+    print(r);
+
+    let a: int = area(4, 5);
+    print(a);
+
+    let p: Point = make_point(3, 7);
+    print(p.x + p.y);
+
+    return 0;
+}

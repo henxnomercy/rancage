@@ -21,10 +21,16 @@ class RecordDecl:
     span: Span
 
 @dataclass
+class ImportDecl:
+    path: str   # raw string literal value, e.g. "utils.cage"
+    span: Span
+
+@dataclass
 class Program:
     functions: list[Function]
     module: str = "main"
     records: list[RecordDecl] = field(default_factory=list)
+    imports: list[ImportDecl] = field(default_factory=list)
 
 @dataclass
 class Param:
@@ -91,6 +97,35 @@ class If(Stmt):
 class While(Stmt):
     condition: Expr
     body: list[Stmt]
+    span: Span
+
+@dataclass
+class For(Stmt):
+    init: Stmt | None
+    condition: Expr | None
+    step: Stmt | None
+    body: list[Stmt]
+    span: Span
+
+@dataclass
+class TryCatch(Stmt):
+    try_body: list[Stmt]
+    err_name: str
+    err_type: str
+    catch_body: list[Stmt]
+    span: Span
+
+@dataclass
+class Throw(Stmt):
+    value: Expr
+    span: Span
+
+@dataclass
+class Break(Stmt):
+    span: Span
+
+@dataclass
+class Continue(Stmt):
     span: Span
 
 class Expr:
