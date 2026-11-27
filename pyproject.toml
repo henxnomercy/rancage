@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rancage-language"
-version = "0.1.0a1"
+version = "0.2.0a1"
 description = "RANCAGE Universal Language reference compiler and bytecode VM"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -30,4 +30,3 @@ rancage = "rancage.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-

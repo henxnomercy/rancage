@@ -1,12 +1,11 @@
 # RANCAGE Project Status
 
-**Status date:** 24 November 2026
-**Repository:** `https://github.com/henxnomercy/rancage`
+**Status date:** 17 November 2026
+**Repository:** `https://github.com/henxnomercy/rancage-language`
 **Primary branch:** `main`
-**Current published RANCAGE version:** `v0.1.0-alpha.1` (pre-release)
-**Root commit:** `228f7a1dfe7a276f0546174128046ca21ef369e8`
-**Python package version:** `0.1.0a1`
-**CLI version output:** `RANCAGE 0.1.0a1`
+**Current frozen RANCAGE baseline:** `v0.2.0a1`
+**Baseline commit:** `03c6ec15b31eeddf8210223c32ca98793abe4222`
+**Historical NOVA tag:** `v0.1.0`
 **Implementation language:** Python 3.10+
 **Overall position:** Stage 0 is complete and frozen. Stage 1 and all subsequent implementation milestones remain unauthorized.
 
@@ -14,7 +13,7 @@
 
 ## 1. Executive Summary
 
-RANCAGE has completed its Stage 0 language foundation and published a clean-slate snapshot in the `henxnomercy/rancage` repository. The public pre-release tag is `v0.1.0-alpha.1`, the Python package version is `0.1.0a1`, and the CLI reports `RANCAGE 0.1.0a1`. The initial commit is a single root commit with no parent from the predecessor repository. The snapshot contains the lexer, parser, static type checker, compiler, JSON-based RANCAGE-IR, bounded reference virtual machine, CLI, documentation, examples, and tests.
+RANCAGE has completed its Stage 0 language foundation and published the corresponding `v0.2.0a1` baseline to the `main` branch and Git tag. The baseline establishes a working lexer, parser, static type checker, compiler, JSON-based RANCAGE-IR, bounded reference virtual machine, and command-line workflow.
 
 The project is now in a post-Stage-0 planning and governance phase. Work is organized into three distinct tracks:
 
@@ -26,30 +25,28 @@ The immediate project priorities are to maintain the frozen baseline, reconcile 
 
 ## 2. Version and Baseline Policy
 
-### 2.1 Pre-clean-slate history
+### 2.1 Historical baseline
 
-- The predecessor `rancage-language` repository is retained privately as an archive.
-- Its earlier `v0.1.0` and `v0.2.0a1` references belong to that predecessor history; they are not tags in this clean-slate repository.
-- The predecessor repository's Git history was intentionally not imported into the new public repository.
+- `v0.1.0` is retained as the historical NOVA baseline.
+- The published `v0.1.0` tag must not be modified or repurposed.
+- Historical NOVA-IR compatibility is read-only; it does not redefine the current RANCAGE baseline.
 
 ### 2.2 Current RANCAGE baseline
 
-- The current public pre-release tag is `v0.1.0-alpha.1`.
-- Root commit: `228f7a1dfe7a276f0546174128046ca21ef369e8`; it has no parent commit.
-- Python package version: `0.1.0a1` (PEP 440 normalized form).
-- CLI version output: `RANCAGE 0.1.0a1`.
-- The annotated `v0.1.0-alpha.1` tag points to the root commit.
-- Stage 0 is **CLOSED / FROZEN** at this published snapshot.
-- Do not amend, rewrite, or move the published root commit or version tag. Future work must proceed through new reviewed commits and separately approved milestones.
+- `v0.2.0a1` is the frozen Stage 0 RANCAGE baseline.
+- Baseline commit: `03c6ec15b31eeddf8210223c32ca98793abe4222`.
+- The annotated `v0.2.0a1` tag and `main` commit were pushed to `origin`.
+- Stage 0 is **CLOSED / FROZEN**.
+- Do not amend, rewrite, or move the frozen baseline tag. Future development must proceed through new reviewed commits and separately approved milestones.
 
-The package version, CLI display version, Git tag, language semantic baseline, and RANCAGE-IR format version are separate version layers. The current tag is `v0.1.0-alpha.1`; the language syntax and semantics baseline remains RANCAGE 0.1; the compiler emits RANCAGE-IR 0.2 and the VM retains tested read compatibility for RANCAGE-IR 0.1.
+The historical NOVA `v0.1.0` and RANCAGE `v0.2.0a1` are distinct references. The former is not the current Stage 0 baseline.
 
 ## 3. Core Language Development
 
 ### 3.1 Stage 0 — Language Foundation
 
 **Status: COMPLETE / CLOSED / FROZEN**
-**Published clean-slate baseline: `v0.1.0-alpha.1`**
+**Baseline: `v0.2.0a1`**
 
 | Milestone | Scope | Status |
 |---|---|---|
@@ -70,7 +67,7 @@ The frozen Stage 0 baseline includes:
 - Maps/dictionaries and map mutation/access operations.
 - Records/record instances and field access/mutation.
 - Compiler from AST to RANCAGE-IR 0.2.
-- Read-only compatibility support for historical RANCAGE-IR 0.1 and RANCAGE-IR 0.1 inputs where documented.
+- Read-only compatibility support for historical RANCAGE-IR 0.1 and NOVA-IR 0.1 inputs where documented.
 - JSON-based, stack-oriented RANCAGE-IR representation.
 - Bounded reference Virtual Machine implemented in Python.
 - Basic runtime intrinsics, including collection, string, and character operations.
@@ -99,13 +96,17 @@ The reference VM includes explicit runtime controls, including:
 
 ### 3.4 Stage 0 verification evidence
 
-- Clean-slate source test suite: **134/134 tests passed**.
-- The full test run was executed on Windows from the clean-slate staging workspace.
-- The suite covers language, compiler, VM, adversarial QA, integration, CLI, and Terminal REPL behavior.
-- The maintainer's clean-slate QA report separately recorded a successful local Windows standalone build and bundle checks for CLI version output, the `hello.cage` example, bundled license files, and the SHA-256 manifest.
-- The GitHub Actions CI workflow completed successfully after the initial publication.
-- These checks do not establish native compilation, self-hosting, hardened OS isolation, or production support for other operating systems.
-- Python versions and operating systems not explicitly covered by current reproducible test evidence must be treated as unverified.
+- Final Stage 0 QA suite: **74/74 tests passed**.
+- Python 3.10.11: 74/74 passed.
+- Python 3.11.9: 74/74 passed.
+- Python 3.14.6: 74/74 passed.
+- Python 3.15.2: 74/74 passed.
+- Clean-checkout test run: 74/74 passed.
+- Windows 10 x64: verified.
+- CLI source and `.rcb` workflows were checked against the `hello`, `control_flow`, and `functions` examples.
+- Linux and macOS were not verified in the Stage 0 test matrix.
+
+These results establish the tested Python/Windows baseline. They do not establish native compilation, self-hosting, hardened OS isolation, or production support for other operating systems.
 
 ### 3.5 Stage 1 — Language Evolution
 
@@ -126,39 +127,38 @@ Lists, maps, records, nullable types, and the Stage 0 VM/IR foundations already 
 
 ## 4. Packaging, CLI, and Publication
 
-### 4.1 CLI and Windows standalone packaging
+### 4.1 CLI and Windows preview
 
-The repository includes a Windows standalone packaging path using PyInstaller one-file and one-folder builds. The Python reference compiler and VM remain the active implementation; the executable bundles the Python runtime and is not a native compiler or a self-hosted RANCAGE toolchain.
+The project has a Windows standalone packaging path using PyInstaller one-file and one-folder builds. The supplied project status records a successful Windows x64 GitHub Actions preview artifact and maintainer smoke tests on Windows without a separate Python installation.
 
-The clean-slate maintainer QA report recorded successful local checks for:
+The recorded smoke tests covered:
 
-- CLI version output: `RANCAGE 0.1.0a1`.
-- Running `examples/hello.cage` and receiving the expected output.
-- Bundled license files and the generated SHA-256 manifest.
-- The Windows bundle smoke-test script.
+- `--version`.
+- Source `check` and `run`.
+- Bytecode `build` and `run`.
+- The three example programs: `hello`, `control_flow`, and `functions`.
 
-These checks do not establish an installer, updater, code signing, hardened OS sandbox, bytecode encryption, anti-tamper, or production support for other operating systems.
+These are preview workflow checks. They do not establish an installer, updater, code signing, hardened sandbox, bytecode encryption, anti-tamper, or support for other operating systems.
 
 ### 4.2 Repository publication
 
-- Current public repository: `https://github.com/henxnomercy/rancage`.
-- Default branch: `main`.
-- Initial snapshot commit: `228f7a1dfe7a276f0546174128046ca21ef369e8` (`Initial clean-slate RANCAGE snapshot`).
-- The initial commit contains 67 files and has no parent commit.
-- Annotated tag `v0.1.0-alpha.1` points to the initial root commit.
-- The predecessor `henxnomercy/rancage-language` repository is private and retained as an archive; its history was not imported.
+- Repository identity is `rancage-language`.
+- The RANCAGE/CAGE identity migration was merged into `main`.
+- Stage 0 commit `03c6ec15b31eeddf8210223c32ca98793abe4222` was pushed to `origin/main`.
+- Annotated tag `v0.2.0a1` was pushed and its peeled commit target was verified.
+- The historical `v0.1.0` tag remains unchanged.
 
-A GitHub Release page/object is distinct from a Git tag. This status records the published tag; it does not assert that a separate GitHub Release object exists.
+A GitHub Release page/object is distinct from a Git tag. Its publication status is not asserted by this document.
 
 ### 4.3 Publication and security checklist
 
-The earlier publication checklist recorded the repository rename, migration, package-author metadata update, review of reachable commit author metadata, common-secret-pattern review of the Git history bundle, removal of the obsolete `RANCAGE.cmd` launcher from the working tree, selection of the hybrid licensing model, and review of publication/security guidance.
+The earlier publication checklist recorded the repository rename, migration, package-author metadata update, review of reachable commit author metadata, common-secret-pattern review of the Git history bundle, removal of the obsolete `nova.cmd` launcher from the working tree, selection of the hybrid licensing model, and review of publication/security guidance.
 
 Items requiring separate current verification before any further public-release declaration:
 
 - GitHub private vulnerability reporting configuration.
 - Final state of any remaining publication-only local changes.
-- Whether a separate GitHub Release has been created for `v0.1.0-alpha.1`.
+- Whether a GitHub Release has been created for `v0.2.0a1`.
 
 The Stage 0 baseline push and tag publication are complete; the older generic checklist item saying that the Stage 0 commit/push is still pending is obsolete.
 
@@ -345,7 +345,7 @@ The JSON-based IR representation is currently an explicit project format; its re
 
 | Track | Milestone / item | Status | Next gate |
 |---|---|---|---|
-| Core | Stage 0 / `v0.1.0-alpha.1` | CLOSED / FROZEN | Preserve baseline |
+| Core | Stage 0 / `v0.2.0a1` | CLOSED / FROZEN | Preserve baseline |
 | Core | Stage 1 | NOT STARTED / NOT AUTHORIZED | Approved Stage 1 proposal |
 | Performance | RPR proposal v0.3 | CONDITIONAL APPROVAL / DRAFT ONLY | Resolve provenance blocker and proposal review |
 | Performance | Historical source investigation | INSUFFICIENT EVIDENCE | Authorized evidence collection |

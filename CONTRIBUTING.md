@@ -1,15 +1,12 @@
 # Contributing to RANCAGE
 
-RANCAGE is an experimental pre-1.0 programming-language project. The current
-public clean-slate baseline is `v0.1.0-alpha.1` (Python package version
-`0.1.0a1`). It contains the completed and frozen Stage 0 language foundation;
-the language syntax and semantics baseline remains RANCAGE 0.1. Stage 1 has not
-started and is not authorized.
+RANCAGE is an experimental pre-1.0 programming-language project. The `v0.1.0`
+language baseline is frozen; the `0.2.0-alpha.1` preview focuses on Windows
+standalone packaging and publication hygiene.
 
 ## Before changing code
 
-- Read `README.md`, `PROJECT_STATUS.md`, `SPEC.md`, `SECURITY.md`, and
-  `LICENSE`.
+- Read `AGENTS.md`, `PROJECT_STATUS.md`, `SPEC.md`, `SECURITY.md`, and `LICENSE`.
 - Open an issue or create a clearly scoped task.
 - Work on a feature branch; do not commit directly to `main` for code changes.
 - Do not submit code copied from third-party projects unless its license and

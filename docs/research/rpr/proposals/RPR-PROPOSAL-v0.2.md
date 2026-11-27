@@ -315,7 +315,7 @@ Proposal Typed IR minimal harus menjelaskan:
 - efek samping, error, dan operasi yang dapat gagal;
 - verifikasi well-formedness IR;
 - aturan lowering ke bytecode VM dan/atau native backend;
-- kompatibilitas dengan IR 0.1/0.2 dan RANCAGE-IR historis;
+- kompatibilitas dengan IR 0.1/0.2 dan NOVA-IR historis;
 - strategi pengujian kesetaraan hasil antara VM dan backend lain.
 
 Typed IR design adalah milestone desain. Ia tidak otomatis mengizinkan perubahan kode, format IR publik, atau penghapusan kompatibilitas.
@@ -547,4 +547,3 @@ Angka historis pada `benjdd.com/languages2/` menjadi motivasi dan referensi publ
    Dokumentasi workload loop versi baru yang menyebut 100 juta pembaruan array. Branch `main` harus diganti dengan commit SHA pada fixture RPB-001-N sebelum pengujian formal.
 
 **External-source audit note:** halaman web telah diperiksa, tetapi SHA commit historis yang tepat dan SHA-256 file benchmark belum dipatok dalam dokumen ini. Itu tetap menjadi deliverable R0.
-

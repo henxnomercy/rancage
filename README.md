@@ -1,30 +1,17 @@
 # RANCAGE — Universal Programming Language
 
-**Published version tag:** `v0.1.0-alpha.1` (pre-release)
-**Python package version:** `0.1.0a1`
-**CLI version output:** `RANCAGE 0.1.0a1`
+**Development version:** `0.2.0-alpha.1`
 **Language baseline:** RANCAGE 0.1 syntax and semantics
 **Implementation:** Python reference compiler and VM
 
 RANCAGE is an experimental general-purpose programming language project. This
 repository contains its reference implementation: lexer, parser, AST, static
 type checker, RANCAGE-IR bytecode compiler, bounded virtual machine, CLI,
-examples, documentation, and tests.
+examples, and tests.
 
-> **Current reality:** the implemented execution target is the Python reference
-> VM. RANCAGE does not yet compile to native machine code, Android APK/AAB, iOS
+> **Current reality:** the implemented target is the Python reference VM.
+> RANCAGE does not yet compile to native machine code, Android APK/AAB, iOS
 > apps, WebAssembly, Roblox Luau, or other production targets.
-
-## Versioning
-
-This clean-slate repository starts with one root commit and the annotated Git
-tag `v0.1.0-alpha.1`. The Python package metadata uses the PEP 440 normalized
-version `0.1.0a1`, which is the value shown by the CLI as
-`RANCAGE 0.1.0a1`. These are representations of the same pre-release version.
-
-The language syntax and semantics baseline remains RANCAGE 0.1. The package
-version, CLI display, Git tag, language baseline, and RANCAGE-IR format version
-are separate version layers and must not be conflated.
 
 ## Implementation decision
 
@@ -57,11 +44,12 @@ PYTHONPATH=src python -m unittest discover -s tests -v
 PYTHONPATH=src python -m rancage run examples/hello.cage
 ```
 
-## Windows standalone packaging
+## Windows standalone preview
 
-The repository includes a **Windows executable packaging pipeline** using
-PyInstaller. The end-user package runs without a separate Python installation
-because the Python runtime is bundled into the distribution.
+The `0.2.0-alpha.1` development line adds a **Windows executable packaging
+pipeline** using PyInstaller. The end-user package runs without a separate
+Python installation because the Python runtime is bundled into the
+distribution.
 
 This is a packaged Python application, **not** a native compiler rewrite and
 **not** self-hosting RANCAGE. Python remains the language used to implement the
@@ -87,26 +75,22 @@ PyInstaller is not a cross-compiler; build on the target operating system.
 The canonical file extensions are `.cage` for source and `.rcb` for compiled
 bytecode. The primary command is `cage` (`cage.exe` on Windows); `rancage`
 remains an alias for systems where `cage` is already used by another
-application. The old `.RANCAGE`, `.nvm`, and interim `.rcg` extensions are no
-longer accepted by source CLI commands. The VM accepts RANCAGE-IR format
-versions 0.1 and 0.2; unsupported format markers are rejected.
+application. The old `.nova`, `.nvm`, and interim `.rcg` extensions are no
+longer accepted by source CLI commands. Legacy NOVA-IR payloads remain readable
+by the VM when stored with the `.rcb` extension, as covered by tests.
 
 ## Implemented language features
 
-- Scalar types: `int`, `float`, `bool`, `string`, and `void`
-- `fn` functions with typed parameters and return types
-- Mutable `let` bindings and immutable `const` bindings
-- `if/else`, `while`, `return`, arithmetic, comparisons, equality, and
-  boolean operators
-- Records with named fields, initialization, field access, and field mutation
-- Generic lists (`list[T]`) and maps (`map[string, V]`), including nested
-  collection types
-- Nullable types (`T?`) and the `null` literal
-- List, map, and string indexing
-- Intrinsics including `len`, `push`, `pop`, `slice`, `ord`, `chr`,
-  `map_has`, and `map_remove`
+- `int`, `float`, `bool`, `string`, and `void`
+- `fn` functions with typed parameters and returns
+- `let` and immutable `const`
+- Assignment, function calls, and `print(value)`
+- `if/else`, `while`, and `return`
+- Arithmetic, comparison, equality, and boolean operators
+- `//` and `/* ... */` comments
+- Function calls and the `print(value)` intrinsic
+- `//` and `/* ... */` comments
 - Static type checking before code generation
-- JSON-based RANCAGE-IR and a bounded reference VM with runtime/resource checks
 
 See [SPEC.md](SPEC.md) for the language specification.
 
@@ -118,10 +102,11 @@ Run the source test suite with:
 .\run-tests.cmd
 ```
 
-The current suite contains **134 unit, integration, and QA tests**. The Windows
-standalone workflow builds one-file and one-folder variants and runs executable
-smoke tests. The clean-slate Windows QA run reported 134/134 tests passing and
-separately verified the local standalone bundle.
+The current suite contains 16 unit/integration tests. The Windows standalone
+workflow builds both one-file and one-folder variants and runs executable
+smoke tests. The project maintainer has also manually tested `--version`,
+source validation/execution, bytecode build, and bytecode execution for all
+three example programs on Windows without a separate Python installation.
 
 ## Security and packaging notes
 
@@ -156,7 +141,8 @@ to use, modify, or redistribute RANCAGE Core outside those terms. See
 
 ## Project status
 
-Stage 0 is complete, closed, and frozen at the clean-slate snapshot tagged
-`v0.1.0-alpha.1`. Stage 1 has not started and is not authorized. No native
-backend, Android backend, self-hosting compiler, hardened sandbox, or
+`v0.1.0` remains the frozen initial release. `0.2.0-alpha.1` is an unreleased
+development preview focused on Windows standalone packaging. The language
+grammar and semantics are not intentionally changed in this preview. No
+native backend, Android backend, self-hosting compiler, hardened sandbox, or
 production platform support is claimed.

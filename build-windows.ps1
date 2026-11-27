@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param()
 
 $ErrorActionPreference = 'Stop'
@@ -79,7 +79,7 @@ New-Item -ItemType Directory -Force -Path $PackageRoot, $PortableRoot, (Join-Pat
 Copy-Item -LiteralPath $OneFileExe -Destination (Join-Path $PackageRoot 'cage.exe') -Force
 Copy-Item -Path (Join-Path $OneDirApp '*') -Destination $PortableRoot -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $Root 'examples') -Destination $PackageRoot -Recurse -Force
-Copy-Item -LiteralPath (Join-Path $Root 'README-STANDALONE.md') -Destination (Join-Path $PackageRoot 'README.txt') -Force
+Copy-Item -LiteralPath (Join-Path $Root 'docs\project\README-STANDALONE.md') -Destination (Join-Path $PackageRoot 'README.txt') -Force
 Copy-Item -LiteralPath (Join-Path $Root 'THIRD-PARTY-NOTICES.md') -Destination (Join-Path $PackageRoot 'THIRD-PARTY-NOTICES.txt') -Force
 
 $LicenseSource = Join-Path $Root 'licenses'
